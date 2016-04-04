@@ -3,29 +3,25 @@ class alfred::app {
   file { '/var/www':
     ensure => directory,
     owner  => 'deployer',
-  }
-
+  }->
   file { '/home/deployer':
     ensure => directory,
     owner  => 'deployer',
-  }
-
-  exec { 'clone-repo':
-    command   => 'git clone https://github.com/fiuba/alfred.git /var/www/alfred',
-    path      =>  [ '/bin', '/usr/bin', '/usr/local/bin' ],
-    logoutput => true,
-    #user      => 'deployer',
+  }->
+  vcsrepo { '/var/www/alfred':
+    ensure   => present,
+    source   => 'https://github.com/fiuba/alfred.git',
+    provider => git,
+    user     => 'deployer',
   }->
   file { '/var/www/alfred':
     ensure => directory,
     owner  => 'deployer',
-  }  
-
+  }->  
   file { '/var/www/alfred/.env':
     ensure  => present,
     content => template('alfred/env.erb')
-  }
-
+  }->
   file {
     'installer_app.sh':
       ensure  => 'present',
@@ -35,8 +31,7 @@ class alfred::app {
       source  => 'puppet:///modules/alfred/install-app.sh',
       mode    => '0744',
       require =>  File['/home/deployer'],
-  }
-
+  }->
   exec { 'install-app':
     command   => '/home/deployer/install_app.sh',
     path      =>  [ '/bin', '/usr/bin', '/usr/local/bin' ],
@@ -44,8 +39,7 @@ class alfred::app {
     user      => 'deployer',
     timeout   => 1800,
     require   => [File['/var/www/alfred/.env'],File['installer_app.sh']],
-  }
-
+  }->
   file {
     'temp_directory':
       ensure => 'directory',
@@ -53,8 +47,7 @@ class alfred::app {
       owner  => 'alfred',
       group  => 'alfred',
       mode   => 'o+w',
-  }
-
+  }->
   file { '/etc/init/alfred.conf':
     ensure  => present,
     content => template('alfred/alfred.conf.erb')
